@@ -1,0 +1,59 @@
+{
+  "success": true,
+  "currency": "usd",
+  "data": [
+    {
+      "origin": "SLC",
+      "destination": "TYO",
+      "origin_airport": "SLC",
+      "destination_airport": "NRT",
+      "price": 612,
+      "airline": "DL",
+      "flight_number": "121",
+      "departure_at": "2027-03-05T10:15:00-07:00",
+      "return_at": "2027-03-15T16:40:00+09:00",
+      "transfers": 1,
+      "return_transfers": 0,
+      "duration": 1210,
+      "duration_to": 720,
+      "duration_back": 490,
+      "link": "/search/SLC0503NRT15031"
+    },
+    {
+      "origin": "SLC",
+      "destination": "TYO",
+      "origin_airport": "SLC",
+      "destination_airport": "HND",
+      "price": 689.5,
+      "airline": "UA",
+      "flight_number": "37",
+      "departure_at": "2027-03-12T08:00:00-07:00",
+      "return_at": "2027-03-22T11:00:00+09:00",
+      "transfers": 1,
+      "return_transfers": 1,
+      "duration": 1460,
+      "link": "/search/SLC1203HND22031"
+    },
+    {
+      "origin": "SLC",
+      "destination": "TYO",
+      "origin_airport": "SLC",
+      "destination_airport": "NRT",
+      "price": -5,
+      "airline": "DL",
+      "departure_at": "2027-03-06T10:15:00-07:00",
+      "return_at": "2027-03-16T16:40:00+09:00",
+      "transfers": 1,
+      "return_transfers": 0
+    },
+    {
+      "origin": "SLC",
+      "destination": "TYO",
+      "origin_airport": "slc<script>",
+      "destination_airport": "NRT",
+      "price": 500,
+      "departure_at": "2027-03-07T10:15:00-07:00",
+      "return_at": "2027-03-17T16:40:00+09:00"
+    }
+  ]
+}

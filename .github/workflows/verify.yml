@@ -1,0 +1,19 @@
+# Every 3 hours: confirm the best candidate with a live Google Flights price (1 SerpApi search per run = ~240/month).
+name: verify
+
+on:
+  schedule:
+    - cron: "47 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/_run-job.yml
+    with:
+      command: ft verify
+    secrets:
+      FT_DATABASE_URL: ${{ secrets.FT_DATABASE_URL }}
+      FT_SERPAPI_KEY: ${{ secrets.FT_SERPAPI_KEY }}

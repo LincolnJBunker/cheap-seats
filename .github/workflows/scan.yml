@@ -1,0 +1,19 @@
+# Every 6 hours: cached fares from Travelpayouts for every active watch.
+name: scan
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    uses: ./.github/workflows/_run-job.yml
+    with:
+      command: ft scan
+    secrets:
+      FT_DATABASE_URL: ${{ secrets.FT_DATABASE_URL }}
+      FT_TRAVELPAYOUTS_TOKEN: ${{ secrets.FT_TRAVELPAYOUTS_TOKEN }}

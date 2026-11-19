@@ -1,0 +1,24 @@
+# Secrets: never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Local data / scratch
+*.sqlite
+*.log
+.DS_Store
+out/
+requirements-audit.txt

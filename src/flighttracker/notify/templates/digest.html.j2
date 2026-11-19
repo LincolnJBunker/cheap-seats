@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<body style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #1a1a1a; max-width: 640px; margin: 0 auto; padding: 16px;">
+  <h2 style="margin: 0 0 4px;">Flight digest &middot; {{ today.isoformat() }}</h2>
+  <p style="margin: 0 0 16px; color: #555;">Cheapest fares seen in the last 48 hours for each watch.</p>
+
+  {% for d in digests %}
+  {% set w = d.watch %}
+  <div style="border: 1px solid #ddd; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px;">
+    <div style="font-size: 17px; font-weight: 600;">
+      {{ w.origin }} &rarr; {{ w.destination }}
+      <span style="font-weight: 400; color: #555;">&middot; {{ w.trip_type | replace("_", "-") }} &middot; {{ w.cabin | replace("_", " ") }}</span>
+    </div>
+    <div style="color: #555; font-size: 13px; margin-bottom: 8px;">
+      Departing {{ w.depart_from.isoformat() }} to {{ w.depart_to.isoformat() }}
+      {% if w.min_nights %}&middot; {{ w.min_nights }}&ndash;{{ w.max_nights }} nights{% endif %}
+      {% if w.max_price_cents %}&middot; alert under {{ w.max_price_cents | dollars }}{% endif %}
+    </div>
+    <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+      {% for label, fare in [("Live (Google Flights via SerpApi)", d.cheapest_live), ("Cached (Travelpayouts, may be stale)", d.cheapest_cached)] %}
+      <tr>
+        <td style="padding: 3px 0; color: #555; width: 45%;">{{ label }}</td>
+        <td style="padding: 3px 0;">
+          {% if fare %}
+          <strong>{{ fare.price_cents | dollars }} {{ fare.currency }}</strong>
+          &middot; {{ fare.depart_date.isoformat() }}{% if fare.return_date %} &ndash; {{ fare.return_date.isoformat() }}{% endif %}
+          &middot; {% if fare.stops == 0 %}nonstop{% elif fare.stops is not none %}{{ fare.stops }} stop{{ "s" if fare.stops > 1 }}{% else %}stops unknown{% endif %}
+          {% if fare.carriers %}&middot; {{ fare.carriers }}{% endif %}
+          {% else %}
+          <span style="color: #888;">nothing in the last 48h</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td style="padding: 3px 0; color: #555;">Our typical price</td>
+        <td style="padding: 3px 0;">
+          {% if d.sample_n >= 20 %}{{ d.median_cents | dollars }} median of {{ d.sample_n }} daily observations (last 120 days)
+          {% elif d.sample_n > 0 %}{{ d.median_cents | dollars }} median, but only {{ d.sample_n }} observations so far (not reliable yet)
+          {% else %}<span style="color: #888;">no history yet</span>{% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 0; color: #555;">Google's view</td>
+        <td style="padding: 3px 0;">
+          {% if d.google_level or d.google_typical_low_cents %}
+          {% if d.google_level %}price level <strong>{{ d.google_level }}</strong>{% endif %}
+          {% if d.google_typical_low_cents %}&middot; typical {{ d.google_typical_low_cents | dollars }}&ndash;{{ d.google_typical_high_cents | dollars }}{% endif %}
+          {% else %}<span style="color: #888;">not checked yet</span>{% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+  {% else %}
+  <p>No active watches. Add one with <code>ft watch add</code>.</p>
+  {% endfor %}
+
+  <p style="font-size: 12px; color: #777; margin-top: 20px; line-height: 1.5;">
+    <strong>How to read this.</strong> "Live" prices come from a real Google Flights search made by this tracker.
+    "Cached" prices are other travellers' searches from the past few days and may no longer be available.
+    "Our typical price" counts each date pair's cheapest price once per day, so a fare seen many times isn't over-counted.
+    All prices are in the listed currency; nothing is converted. Methodology: docs/transformations.md in the repo.
+  </p>
+</body>
+</html>

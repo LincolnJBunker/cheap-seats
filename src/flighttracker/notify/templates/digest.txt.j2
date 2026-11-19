@@ -1,0 +1,21 @@
+Flight digest {{ today.isoformat() }}
+Cheapest fares seen in the last 48 hours for each watch.
+
+{% for d in digests %}
+{% set w = d.watch %}
+{{ w.origin }} -> {{ w.destination }} ({{ w.trip_type | replace("_", "-") }}, {{ w.cabin | replace("_", " ") }})
+  Departing {{ w.depart_from.isoformat() }} to {{ w.depart_to.isoformat() }}{% if w.min_nights %}, {{ w.min_nights }}-{{ w.max_nights }} nights{% endif %}
+
+{% for label, fare in [("Live", d.cheapest_live), ("Cached", d.cheapest_cached)] %}
+  {{ label }}: {% if fare %}{{ fare.price_cents | dollars }} {{ fare.currency }}, {{ fare.depart_date.isoformat() }}{% if fare.return_date %} - {{ fare.return_date.isoformat() }}{% endif %}, {% if fare.stops is not none %}{{ fare.stops }} stop(s){% else %}stops unknown{% endif %}{% if fare.carriers %}, {{ fare.carriers }}{% endif %}{% else %}nothing in the last 48h{% endif %}
+
+{% endfor %}
+  Typical: {% if d.sample_n > 0 %}{{ d.median_cents | dollars }} median of {{ d.sample_n }} observations{% if d.sample_n < 20 %} (not reliable yet){% endif %}{% else %}no history yet{% endif %}
+
+  Google: {% if d.google_level %}{{ d.google_level }}{% else %}not checked{% endif %}{% if d.google_typical_low_cents %}, typical {{ d.google_typical_low_cents | dollars }}-{{ d.google_typical_high_cents | dollars }}{% endif %}
+
+
+{% else %}
+No active watches. Add one with `ft watch add`.
+{% endfor %}
+Live = a real Google Flights search by this tracker. Cached = other travellers' recent searches; may be gone.

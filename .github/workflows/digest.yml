@@ -1,0 +1,19 @@
+# Daily at 14:00 UTC (7am MST / 8am MDT): email digest.
+name: digest
+
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    uses: ./.github/workflows/_run-job.yml
+    with:
+      command: ft digest
+    secrets:
+      FT_DATABASE_URL: ${{ secrets.FT_DATABASE_URL }}
+      FT_RESEND_API_KEY: ${{ secrets.FT_RESEND_API_KEY }}

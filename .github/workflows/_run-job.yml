@@ -1,0 +1,59 @@
+# Reusable workflow: runs one tracker command against the production database.
+# Called by scan.yml, verify.yml, digest.yml, maintain.yml and migrate.yml.
+name: run-job
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: "Command to run, e.g. 'ft scan' (fixed strings from the caller workflows)"
+        required: true
+        type: string
+    secrets:
+      FT_DATABASE_URL:
+        required: false
+      FT_MIGRATION_DATABASE_URL:
+        required: false
+      FT_TRAVELPAYOUTS_TOKEN:
+        required: false
+      FT_SERPAPI_KEY:
+        required: false
+      FT_RESEND_API_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+# All jobs share one queue: they never overlap, so API budgets and the DB stay consistent.
+concurrency:
+  group: flight-tracker-jobs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install (locked, no dev dependencies)
+        run: uv sync --frozen --no-dev
+
+      - name: Run
+        env:
+          # The command is passed via env (not inlined into the script) to avoid template injection.
+          FT_COMMAND: ${{ inputs.command }}
+          FT_DATABASE_URL: ${{ secrets.FT_DATABASE_URL }}
+          FT_MIGRATION_DATABASE_URL: ${{ secrets.FT_MIGRATION_DATABASE_URL }}
+          FT_TRAVELPAYOUTS_TOKEN: ${{ secrets.FT_TRAVELPAYOUTS_TOKEN }}
+          FT_SERPAPI_KEY: ${{ secrets.FT_SERPAPI_KEY }}
+          FT_RESEND_API_KEY: ${{ secrets.FT_RESEND_API_KEY }}
+        # Word splitting of $FT_COMMAND is intended ("ft scan" -> ft, scan).
+        run: uv run $FT_COMMAND

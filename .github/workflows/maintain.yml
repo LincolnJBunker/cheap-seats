@@ -1,0 +1,18 @@
+# Daily: refresh route statistics and purge raw payloads older than 30 days.
+name: maintain
+
+on:
+  schedule:
+    - cron: "30 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  maintain:
+    uses: ./.github/workflows/_run-job.yml
+    with:
+      command: ft maintain
+    secrets:
+      FT_DATABASE_URL: ${{ secrets.FT_DATABASE_URL }}

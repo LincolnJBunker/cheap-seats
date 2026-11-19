@@ -1,0 +1,18 @@
+# Weekly dependency updates. A side benefit: the PRs count as repo activity, which keeps GitHub
+# from auto-disabling the scheduled workflows after 60 days without commits.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
