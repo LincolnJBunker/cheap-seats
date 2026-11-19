@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+import certifi
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
@@ -30,6 +31,21 @@ def check_database_url(url: str) -> str:
                 "remote database URLs must set sslmode=verify-full (preferred) or require"
             )
     return url
+
+
+def resolve_ssl_root_cert(url: str) -> str:
+    """Make ``sslrootcert=system`` work everywhere.
+
+    psycopg's binary wheel bundles its own OpenSSL, which can't find the OS trust store (on macOS
+    it fails with "certificate verify failed"). Replace ``system`` with certifi's maintained CA
+    bundle so ``sslmode=verify-full`` behaves the same on a laptop and in GitHub Actions.
+    """
+    parsed = make_url(url)
+    if parsed.query.get("sslrootcert") != "system":
+        return url
+    return parsed.update_query_dict({"sslrootcert": certifi.where()}).render_as_string(
+        hide_password=False
+    )
 
 
 class Settings(BaseSettings):
@@ -67,6 +83,24 @@ class Settings(BaseSettings):
         if self.migration_database_url and self.migration_database_url.get_secret_value():
             return self.migration_database_url.get_secret_value()
         return self.database_url.get_secret_value()
+
+
+class MigrationSettings(BaseSettings):
+    """Just the database URLs, read the same way as ``Settings`` (environment, then .env), so
+    migrations don't require API keys or other job settings to be present."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="FT_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+    database_url: SecretStr | None = None
+    migration_database_url: SecretStr | None = None
+
+    def url(self) -> str | None:
+        for value in (self.migration_database_url, self.database_url):
+            if value is not None and value.get_secret_value():
+                return value.get_secret_value()
+        return None
 
 
 @lru_cache(maxsize=1)

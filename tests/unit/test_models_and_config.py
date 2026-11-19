@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from flighttracker.config import check_database_url
+from flighttracker.config import MigrationSettings, check_database_url, resolve_ssl_root_cert
 from flighttracker.db.repositories import Watch
 from flighttracker.jobs import coverage_date, months_in_window
 from flighttracker.models import TripType, WatchInput
@@ -60,6 +60,22 @@ class TestDatabaseUrl:
             check_database_url("postgresql+psycopg://u:p@ep-x.us-east-2.aws.neon.tech/neondb")
         check_database_url("postgresql+psycopg://u:p@ep-x.aws.neon.tech/neondb?sslmode=verify-full")
 
+    def test_sslrootcert_system_becomes_certifi_bundle(self) -> None:
+        import certifi
+        from sqlalchemy.engine import make_url
+
+        url = (
+            "postgresql+psycopg://u:p@ep-x.aws.neon.tech/db?sslmode=verify-full&sslrootcert=system"
+        )
+        resolved = make_url(resolve_ssl_root_cert(url))
+        assert resolved.query["sslrootcert"] == certifi.where()
+        assert resolved.query["sslmode"] == "verify-full"
+        assert resolved.password == "p"  # credentials survive the rewrite
+
+    def test_other_urls_are_untouched(self) -> None:
+        url = "postgresql+psycopg:///flighttracker"
+        assert resolve_ssl_root_cert(url) == url
+
     def test_rejects_non_postgres(self) -> None:
         with pytest.raises(ValueError):
             check_database_url("mysql://localhost/x")
@@ -95,3 +111,28 @@ class TestScheduling:
             depart, ret = target
             assert date(2027, 3, 1) <= depart <= date(2027, 3, 10)
             assert ret is not None and (ret - depart).days == 10
+
+
+class TestMigrationSettings:
+    def test_reads_dotenv_and_prefers_migration_url(
+        self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        for name in ("FT_DATABASE_URL", "FT_MIGRATION_DATABASE_URL"):
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".env").write_text(
+            "FT_DATABASE_URL=postgresql+psycopg:///worker\n"
+            "ft_migration_database_url=postgresql+psycopg:///owner\n"  # names are case-insensitive
+        )
+        assert MigrationSettings().url() == "postgresql+psycopg:///owner"
+
+    def test_falls_back_to_database_url(
+        self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        for name in ("FT_DATABASE_URL", "FT_MIGRATION_DATABASE_URL"):
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".env").write_text(
+            "FT_DATABASE_URL=postgresql+psycopg:///worker\nFT_MIGRATION_DATABASE_URL=\n"
+        )
+        assert MigrationSettings().url() == "postgresql+psycopg:///worker"
