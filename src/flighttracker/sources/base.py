@@ -23,6 +23,11 @@ import httpx
 
 log = logging.getLogger(__name__)
 
+# httpx logs full request URLs at INFO, and SerpApi's key is a query parameter. Silence it here,
+# where the HTTP client is defined, so this holds no matter how logging is configured elsewhere.
+for _name in ("httpx", "httpcore"):
+    logging.getLogger(_name).setLevel(logging.WARNING)
+
 # Query/body parameter names that carry credentials. Stripped before anything is persisted.
 SECRET_PARAM_NAMES = frozenset({"api_key", "token", "apikey", "access_token", "key"})
 

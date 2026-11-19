@@ -1,5 +1,12 @@
 """Scheduled jobs. Each one records a ``search_runs`` row so every number in the database can be
-traced back to the run (and raw payload) that produced it."""
+traced back to the run (and raw payload) that produced it.
+
+Logging rule: these jobs run in GitHub Actions, whose logs are public on a public repo. Log only
+counts and run ids, never routes, airports, dates or prices (those reveal travel plans). The
+details are in the private database: look a run up with
+``SELECT * FROM v_fares WHERE observation_id IN (SELECT id FROM fare_observations
+WHERE search_run_id = <run id>)``. Enforced by tests/integration/test_pipeline.py.
+"""
 
 from __future__ import annotations
 
@@ -78,11 +85,9 @@ def run_scan(
                 raw_id = repo.save_raw(conn, run_id, raw)
                 result.observations_saved += repo.save_fares(conn, run_id, raw_id, mapped.fares)
             log.info(
-                "scan %s->%s %s %s: %d fares, %d rejected",
-                origin,
-                destination,
-                trip_type,
-                month,
+                "scan run #%d request %d: %d fares, %d rejected",
+                run_id,
+                result.requests_made,
                 len(mapped.fares),
                 sum(mapped.rejected.values()),
             )
@@ -144,7 +149,7 @@ def pick_verification_targets(
                         watch,
                         c.depart_date,
                         c.return_date,
-                        f"cheapest cached fare ${c.cached_price_cents / 100:.0f}",
+                        "cheapest cached fare",
                     )
                 )
                 continue
@@ -197,11 +202,9 @@ def run_verify(
                 if mapped.insight:
                     repo.save_insight(conn, run_id, raw_id, mapped.insight)
             log.info(
-                "verify %s->%s %s/%s (%s): %d live fares",
-                watch.origin,
-                watch.destination,
-                depart,
-                ret,
+                "verify run #%d search %d (%s): %d live fares",
+                run_id,
+                result.requests_made,
                 reason,
                 len(mapped.fares),
             )

@@ -41,6 +41,7 @@ Tests: `tests/integration/test_schema.py::test_rls_isolates_users_for_api_role`.
 |---|---|---|
 | Hide API keys | Done | GitHub Actions secrets; local `.env` (gitignored); `SecretStr` everywhere; config errors print variable *names* only. |
 | Keys out of logs | Done | Travelpayouts token sent as a header. SerpApi's key must be a query param, so `httpx`/`httpcore` loggers are pinned to WARNING and transport errors are logged by type, not message. |
+| Travel plans out of public logs | Done | GitHub Actions logs are public on a public repo. Jobs log only counts and run ids (details stay in the private DB, keyed by run id). Engine uses `hide_parameters=True`; the `ft` entry point prints database errors as type + SQLSTATE + constraint only, because Postgres's own "Failing row contains (...)" text would include routes and dates; Typer's local-variable tracebacks are off. `test_job_logs_never_reveal_routes_dates_or_prices` runs the pipeline at DEBUG and fails on any route, date, price, email or key in the logs. |
 | Keys out of the database | Done | `sanitize_params` strips credential params before `raw_responses`; integration test asserts no secret is stored. |
 | Purge Git secrets | Prevented | New repo with nothing to purge. `gitleaks` pre-commit hook + CI job; enable GitHub secret scanning + push protection in repo settings. If a secret ever leaks: **rotate it first**, then rewrite history with `git filter-repo`. |
 | Public DB key | N/A | Supabase/Firebase browser-key pattern. Our browser never talks to the database. |

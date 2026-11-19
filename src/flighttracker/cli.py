@@ -18,6 +18,7 @@ from flighttracker import jobs
 from flighttracker.config import Settings, get_settings
 from flighttracker.db import repositories as repo
 from flighttracker.db.engine import make_engine
+from flighttracker.errors import safe_error_message
 from flighttracker.logging_setup import configure_logging
 from flighttracker.models import Cabin, TripType, WatchInput
 from flighttracker.notify.email import render_digest, send_via_resend
@@ -27,7 +28,14 @@ from flighttracker.sources.travelpayouts import TravelpayoutsClient
 
 log = logging.getLogger("flighttracker")
 
-app = typer.Typer(help="Flight deal tracker", no_args_is_help=True, add_completion=False)
+app = typer.Typer(
+    help="Flight deal tracker",
+    no_args_is_help=True,
+    add_completion=False,
+    # Rich tracebacks print local variables (routes, dates, emails) into public CI logs.
+    pretty_exceptions_enable=False,
+    pretty_exceptions_show_locals=False,
+)
 user_app = typer.Typer(help="Manage users", no_args_is_help=True)
 watch_app = typer.Typer(help="Manage watched routes", no_args_is_help=True)
 app.add_typer(user_app, name="user")
@@ -270,5 +278,14 @@ def maintain(
     )
 
 
-def main() -> None:  # pragma: no cover
-    sys.exit(app())
+def main() -> None:
+    """Console entry point. Unexpected errors are reported without their message or traceback,
+    because those can contain routes, dates or emails and these logs are public in CI."""
+    try:
+        app()
+    except SystemExit:
+        raise
+    except Exception as exc:
+        log.debug("unhandled error", exc_info=True)  # only visible with --verbose locally
+        typer.secho(f"ft failed: {safe_error_message(exc)}", fg="red", err=True)
+        sys.exit(1)

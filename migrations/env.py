@@ -13,7 +13,8 @@ from flighttracker.config import check_database_url
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Don't disable loggers created before migrations ran (the app's, when run from tests).
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 
 def _database_url() -> str:
