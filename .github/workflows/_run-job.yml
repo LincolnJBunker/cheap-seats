@@ -24,9 +24,12 @@ on:
 permissions:
   contents: read
 
-# All jobs share one queue: they never overlap, so API budgets and the DB stay consistent.
+# One queue per command: a job never overlaps another copy of itself. Different jobs may run at
+# the same time; that's safe because the SerpApi budget is enforced atomically in the database
+# (fn_consume_quota). A single shared queue was wrong: GitHub keeps only ONE pending run per
+# group, so a newly queued job silently cancelled a different job that was waiting.
 concurrency:
-  group: flight-tracker-jobs
+  group: flight-tracker-${{ inputs.command }}
   cancel-in-progress: false
 
 jobs:

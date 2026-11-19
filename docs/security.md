@@ -58,7 +58,7 @@ Tests: `tests/integration/test_schema.py::test_rls_isolates_users_for_api_role`.
 | Security headers | Phase 3 | CSP, `X-Content-Type-Options`, `frame-ancestors 'none'`, `Referrer-Policy`. |
 | Force HTTPS | Done | `PoliteClient` refuses non-HTTPS base URLs; no redirects followed; DB TLS required. Localhost dashboard exempt; Tailscale Serve provides HTTPS. |
 | Scan dependencies | Done | `pip-audit --strict` in CI, Dependabot (uv + Actions), CodeQL (Python + Actions), `uv.lock` pinned. |
-| CI hardening | Done | Actions pinned to commit SHAs; `permissions: contents: read`; `persist-credentials: false`; workflow inputs passed via env to avoid template injection; jobs serialized with `concurrency`. |
+| CI hardening | Done | Actions pinned to commit SHAs; `permissions: contents: read`; `persist-credentials: false`; workflow inputs passed via env to avoid template injection; each job type queued with `concurrency` so it never overlaps itself. |
 
 ## Respecting the data sources
 - No scraping. Google Flights data only via SerpApi's API; cached fares via Travelpayouts' API.
